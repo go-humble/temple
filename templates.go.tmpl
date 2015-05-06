@@ -1,0 +1,14 @@
+package {{ .PackageName }}
+
+{{/* This is a template for the generated go package */}}
+
+import (
+	"html/template"
+)
+
+var (
+	{{ range .Templates }}
+	{{ .Name }} = template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`))	
+	{{ end }}
+)
+
