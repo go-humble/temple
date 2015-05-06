@@ -70,7 +70,7 @@ type TemplateFile struct {
 
 func NewTemplateFile(filename string) (*TemplateFile, error) {
 	// name is everything after the last slash, not including the file extension
-	name := strings.TrimSuffix(filename[strings.LastIndex(filename, string(os.PathSeparator))+1:], ".tmpl")
+	name := strings.TrimSuffix(filepath.Base(filename), ".tmpl")
 	// varName is just the name titlized so it is an exported variable
 	varName := strings.Title(name)
 	fileContents, err := ioutil.ReadFile(filename)
@@ -110,7 +110,7 @@ func build(src, dest, includes string) error {
 	}
 
 	// packageName is everything after the last path separator
-	packageName := dest[strings.LastIndex(dest, string(os.PathSeparator))+1:]
+	packageName := filepath.Base(dest)
 	templateData := TemplateData{
 		PackageName: packageName,
 	}
