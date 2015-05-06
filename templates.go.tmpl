@@ -1,6 +1,7 @@
 package {{ .PackageName }}
 
-{{/* This is a template for the generated go package */}}
+// This package has been automatically generated with temple.
+// Do not edit manually!
 
 import (
 	"html/template"
@@ -8,7 +9,24 @@ import (
 
 var (
 	{{ range .Templates }}
-	{{ .Name }} = template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`))	
+	{{ .VarName }} = template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`))	
 	{{ end }}
+	includes = map[string]*template.Template{
+		{{ range .Includes }}
+			"{{ .Name }}": template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
+		{{ end }}
+	}
 )
+
+func init() {
+	{{ range .Templates }}
+	var err error
+	for _, include := range includes {
+		{{ .VarName }}, err = {{ .VarName }}.AddParseTree(include.Name(), include.Tree)
+		if err != nil {
+			panic(err)
+		}
+	}
+	{{ end }}
+}
 
