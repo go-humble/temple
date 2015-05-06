@@ -22,10 +22,6 @@ var (
 	generatedTmpl = template.Must(template.ParseFiles(filepath.Join(templePath, "templates.go.tmpl")))
 )
 
-func init() {
-
-}
-
 func main() {
 	cmdBuild := &cobra.Command{
 		Use:   "build <src> <dest>",

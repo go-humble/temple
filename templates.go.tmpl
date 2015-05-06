@@ -11,15 +11,12 @@ var (
 	{{ range .Templates }}
 	{{ .VarName }} = template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`))	
 	{{ end }}
-	includes = map[string]*template.Template{
-		{{ range .Includes }}
+	includes = map[string]*template.Template{ {{ range .Includes }}
 			"{{ .Name }}": template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
-		{{ end }}
-	}
+	{{ end }} }
 )
 
-func init() {
-	{{ range .Templates }}
+func init() { {{ range .Templates }}
 	var err error
 	for _, include := range includes {
 		{{ .VarName }}, err = {{ .VarName }}.AddParseTree(include.Name(), include.Tree)
@@ -27,6 +24,5 @@ func init() {
 			panic(err)
 		}
 	}
-	{{ end }}
-}
+{{ end }}}
 
