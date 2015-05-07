@@ -152,6 +152,9 @@ func ParseTemplateFiles(dir string) ([]*TemplateFile, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(files) == 0 {
+		prtty.Warn.Printf("    WARNING: No .tmpl files found in %s", dir)
+	}
 	for _, filename := range files {
 		prtty.Default.Printf("    %s", filename)
 		tf, err := NewTemplateFile(filename)
