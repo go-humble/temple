@@ -25,16 +25,17 @@ var (
 func main() {
 	cmdBuild := &cobra.Command{
 		Use:   "build <src> <dest>",
-		Short: "Compile the templates in the src directory into a go file in the dest directory.",
+		Short: "Compile the templates in the src directory and write generated go code to the dest file.",
 		Long: `The build command will compile the .tmpl files found in the src directory,
 
 along with the .tmpl files found in the layouts and includes directories (if
-provided), and write the results to a go file in the dest directory.
+provided). It generates go source code containing the compiled templates and 
+writes it to the dest file.
 
 The build command works best if your templates are organized to approximate
 template inheritance, as described in this article:
 https://elithrar.github.io/article/approximating-html-template-inheritance/.
-However, if you don't want organize your templates this way, the compiled go
+However, if you don't want organize your templates this way, the generated go
 file will give you direct access to the builtin html templates
 (*template.Template objects from the html/template package), so you can combine
 parse trees manually. You also have the option of not combining parse trees at
@@ -86,7 +87,7 @@ As a consequence, regular templates also cannot reference eachother.
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
-				prtty.Error.Fatal("temple build requires exactly 2 arguments: the src directory and the dest directory.")
+				prtty.Error.Fatal("temple build requires exactly 2 arguments: the src directory and the dest file.")
 			}
 			includes := cmd.Flag("includes").Value.String()
 			layouts := cmd.Flag("layouts").Value.String()
@@ -173,7 +174,7 @@ func build(src, dest, includes, layouts string) error {
 		prtty.Default.Printf("    layouts: %s", layouts)
 	}
 
-	packageName := filepath.Base(dest)
+	packageName := filepath.Base(filepath.Dir(dest))
 	templateData := TemplateData{
 		PackageName: packageName,
 	}
@@ -202,15 +203,17 @@ func build(src, dest, includes, layouts string) error {
 	templateData.Templates = templates
 
 	prtty.Info.Println("--> generating go code...")
-	if err := os.MkdirAll(dest, os.ModePerm); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
 	}
-	destFilename := filepath.Join(dest, packageName+".go")
-	destFile, err := os.Create(destFilename)
+	if !strings.HasSuffix(dest, ".go") {
+		dest += ".go"
+	}
+	destFile, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	prtty.Success.Printf("    CREATE %s", destFilename)
+	prtty.Success.Printf("    CREATE %s", dest)
 	if err := generatedTmpl.Execute(destFile, templateData); err != nil {
 		return err
 	}
