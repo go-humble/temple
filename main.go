@@ -24,6 +24,8 @@ var (
 )
 
 func main() {
+	quiet := false
+
 	cmdBuild := &cobra.Command{
 		Use:   "build <src> <dest>",
 		Short: "Compile the templates in the src directory and write generated go code to the dest file.",
@@ -90,6 +92,10 @@ As a consequence, regular templates also cannot reference eachother.
 			if len(args) != 2 {
 				prtty.Error.Fatal("temple build requires exactly 2 arguments: the src directory and the dest file.")
 			}
+			if quiet {
+				prtty.DefaultLoggers.SetOutput(ioutil.Discard)
+				prtty.Error.Output = os.Stderr
+			}
 			includes := cmd.Flag("includes").Value.String()
 			layouts := cmd.Flag("layouts").Value.String()
 			packageName := cmd.Flag("package").Value.String()
@@ -101,6 +107,7 @@ As a consequence, regular templates also cannot reference eachother.
 	cmdBuild.Flags().String("includes", "", "(optional) The directory to look for includes. Includes are .tmpl files that are shared between layouts and all templates.")
 	cmdBuild.Flags().String("layouts", "", "(optional) The directory to look for layouts. Layouts are .tmpl shared between all templates and have access to includes.")
 	cmdBuild.Flags().String("package", "", "(optional) The package name to use in the generated go file. If not provided, the package name will be the directory the file is in.")
+	cmdBuild.Flags().BoolVar(&quiet, "quiet", false, "If true, temple will only print to the terminal if there was an error.")
 
 	cmdVersion := &cobra.Command{
 		Use:   "version",
