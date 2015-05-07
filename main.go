@@ -160,9 +160,11 @@ func build(src, dest, includes, layouts, packageName string) error {
 	return nil
 }
 
-func NewTemplateFile(filename string) (*TemplateFile, error) {
-	// name is everything after the last slash, not including the file extension
-	name := strings.TrimSuffix(filepath.Base(filename), ".tmpl")
+func NewTemplateFile(prefix, filename string) (*TemplateFile, error) {
+	// baseName is everything after the last slash, not including the file extension
+	baseName := strings.TrimSuffix(filepath.Base(filename), ".tmpl")
+	// name (i.e. the name of the template) is the prefix + baseName
+	name := prefix + baseName
 	// varName is just the name titlized so it is an exported variable
 	varName := strings.Title(name)
 	fileContents, err := ioutil.ReadFile(filename)
@@ -176,7 +178,7 @@ func NewTemplateFile(filename string) (*TemplateFile, error) {
 	}, nil
 }
 
-func ParseTemplateFiles(dir string) ([]*TemplateFile, error) {
+func ParseTemplateFiles(prefix, dir string) ([]*TemplateFile, error) {
 	templateFiles := []*TemplateFile{}
 	files, err := filepath.Glob(filepath.Join(dir, "*.tmpl"))
 	if err != nil {
@@ -187,7 +189,7 @@ func ParseTemplateFiles(dir string) ([]*TemplateFile, error) {
 	}
 	for _, filename := range files {
 		prtty.Default.Printf("    %s", filename)
-		tf, err := NewTemplateFile(filename)
+		tf, err := NewTemplateFile(prefix, filename)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +208,7 @@ func generateTemplateData(src, dest, includes, layouts, packageName string) (Tem
 
 	if includes != "" {
 		prtty.Info.Println("--> parsing includes...")
-		includes, err := ParseTemplateFiles(includes)
+		includes, err := ParseTemplateFiles("includes/", includes)
 		if err != nil {
 			return templateData, err
 		}
@@ -214,14 +216,14 @@ func generateTemplateData(src, dest, includes, layouts, packageName string) (Tem
 	}
 	if layouts != "" {
 		prtty.Info.Println("--> parsing layouts...")
-		layouts, err := ParseTemplateFiles(layouts)
+		layouts, err := ParseTemplateFiles("layouts/", layouts)
 		if err != nil {
 			return templateData, err
 		}
 		templateData.Layouts = layouts
 	}
 	prtty.Info.Println("--> parsing templates...")
-	templates, err := ParseTemplateFiles(src)
+	templates, err := ParseTemplateFiles("", src)
 	if err != nil {
 		return templateData, err
 	}
