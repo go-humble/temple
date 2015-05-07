@@ -8,9 +8,11 @@ import (
 )
 
 var (
-	{{ range .Templates }}
-	{{ .VarName }} = template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`))	
-	{{ end }}
+	Templates = struct{ {{ range .Templates }}
+		{{ .VarName }} *template.Template
+	{{ end }}}{ {{ range .Templates }}
+		{{ .VarName }}: template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
+	{{ end }}}
 	{{ if .Includes }}
 	includes = map[string]*template.Template{ {{ range .Includes }}
 			"{{ .Name }}": template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
@@ -42,7 +44,7 @@ func init() {
 
 	// Add the includes to the parse tree of every regular template
 	{{ range .Templates }}for _, include := range includes {
-		{{ .VarName }}, err = {{ .VarName }}.AddParseTree(include.Name(), include.Tree)
+		Templates.{{ .VarName }}, err = Templates.{{ .VarName }}.AddParseTree(include.Name(), include.Tree)
 		if err != nil {
 			panic(err)
 		}
@@ -63,7 +65,7 @@ func init() {
 	
 	// Add the layouts to the parse tree of every regular template
 	{{ range .Templates }}for _, layout := range layouts {
-		{{ .VarName }}, err = {{ .VarName }}.AddParseTree(layout.Name(), layout.Tree)
+		Templates.{{ .VarName }}, err = Templates.{{ .VarName }}.AddParseTree(layout.Name(), layout.Tree)
 		if err != nil {
 			panic(err)
 		}
