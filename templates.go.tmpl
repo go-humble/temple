@@ -48,7 +48,8 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-	}{{ end }}{{ end }}
+	}
+	{{ end }}{{ end }}
 
 	{{ if .Layouts }}// Add the layouts to the parse tree of every other layout
 	for layoutName, layout := range layouts {
@@ -69,7 +70,8 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-	}{{ end }}{{ end }}
+	}
+	{{ end }}{{ end }}
 
 	{{ if and .Layouts .Includes }}// Add the includes to the parse tree of each layout
 	for layoutName, layout  := range layouts {
