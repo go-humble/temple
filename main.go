@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -130,6 +131,30 @@ type TemplateFile struct {
 	Source  string
 }
 
+func build(src, dest, includes, layouts string) error {
+	prtty.Info.Println("--> building...")
+	prtty.Default.Printf("    src: %s", src)
+	prtty.Default.Printf("    dest: %s", dest)
+	if includes != "" {
+		prtty.Default.Printf("    includes: %s", includes)
+	}
+	if layouts != "" {
+		prtty.Default.Printf("    layouts: %s", layouts)
+	}
+	templateData, err := generateTemplateData(src, dest, includes, layouts)
+	if err != nil {
+		return err
+	}
+	if err := writeFile(templateData, dest); err != nil {
+		return err
+	}
+	if err := formatFile(dest); err != nil {
+		return err
+	}
+	prtty.Info.Println("--> done")
+	return nil
+}
+
 func NewTemplateFile(filename string) (*TemplateFile, error) {
 	// name is everything after the last slash, not including the file extension
 	name := strings.TrimSuffix(filepath.Base(filename), ".tmpl")
@@ -166,17 +191,7 @@ func ParseTemplateFiles(dir string) ([]*TemplateFile, error) {
 	return templateFiles, nil
 }
 
-func build(src, dest, includes, layouts string) error {
-	prtty.Info.Println("--> building...")
-	prtty.Default.Printf("    src: %s", src)
-	prtty.Default.Printf("    dest: %s", dest)
-	if includes != "" {
-		prtty.Default.Printf("    includes: %s", includes)
-	}
-	if layouts != "" {
-		prtty.Default.Printf("    layouts: %s", layouts)
-	}
-
+func generateTemplateData(src, dest, includes, layouts string) (TemplateData, error) {
 	packageName := filepath.Base(filepath.Dir(dest))
 	templateData := TemplateData{
 		PackageName: packageName,
@@ -186,7 +201,7 @@ func build(src, dest, includes, layouts string) error {
 		prtty.Info.Println("--> parsing includes...")
 		includes, err := ParseTemplateFiles(includes)
 		if err != nil {
-			return err
+			return templateData, err
 		}
 		templateData.Includes = includes
 	}
@@ -194,17 +209,20 @@ func build(src, dest, includes, layouts string) error {
 		prtty.Info.Println("--> parsing layouts...")
 		layouts, err := ParseTemplateFiles(layouts)
 		if err != nil {
-			return err
+			return templateData, err
 		}
 		templateData.Layouts = layouts
 	}
 	prtty.Info.Println("--> parsing templates...")
 	templates, err := ParseTemplateFiles(src)
 	if err != nil {
-		return err
+		return templateData, err
 	}
 	templateData.Templates = templates
+	return templateData, nil
+}
 
+func writeFile(data TemplateData, dest string) error {
 	prtty.Info.Println("--> generating go code...")
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
@@ -217,10 +235,24 @@ func build(src, dest, includes, layouts string) error {
 		return err
 	}
 	prtty.Success.Printf("    CREATE %s", dest)
-	if err := generatedTmpl.Execute(destFile, templateData); err != nil {
+	if err := generatedTmpl.Execute(destFile, data); err != nil {
 		return err
 	}
+	return nil
+}
 
-	prtty.Info.Println("--> done")
+func formatFile(dest string) error {
+	if _, err := exec.LookPath("gofmt"); err != nil {
+		// gofmt is not installed or is not in PATH
+		return nil
+	}
+	prtty.Default.Println("    formatting with gofmt...")
+	output, err := exec.Command("gofmt", "-w", dest).CombinedOutput()
+	if err != nil {
+		return err
+	}
+	if output != nil && len(output) > 0 {
+		prtty.Default.Printf("    %s", string(output))
+	}
 	return nil
 }
