@@ -92,13 +92,15 @@ As a consequence, regular templates also cannot reference eachother.
 			}
 			includes := cmd.Flag("includes").Value.String()
 			layouts := cmd.Flag("layouts").Value.String()
-			if err := build(args[0], args[1], includes, layouts); err != nil {
+			packageName := cmd.Flag("package").Value.String()
+			if err := build(args[0], args[1], includes, layouts, packageName); err != nil {
 				prtty.Error.Fatal(err)
 			}
 		},
 	}
 	cmdBuild.Flags().String("includes", "", "(optional) The directory to look for includes. Includes are .tmpl files that are shared between layouts and all templates.")
 	cmdBuild.Flags().String("layouts", "", "(optional) The directory to look for layouts. Layouts are .tmpl shared between all templates and have access to includes.")
+	cmdBuild.Flags().String("package", "", "(optional) The package name to use in the generated go file. If not provided, the package name will be the directory the file is in.")
 
 	cmdVersion := &cobra.Command{
 		Use:   "version",
@@ -131,7 +133,7 @@ type TemplateFile struct {
 	Source  string
 }
 
-func build(src, dest, includes, layouts string) error {
+func build(src, dest, includes, layouts, packageName string) error {
 	prtty.Info.Println("--> building...")
 	prtty.Default.Printf("    src: %s", src)
 	prtty.Default.Printf("    dest: %s", dest)
@@ -141,7 +143,10 @@ func build(src, dest, includes, layouts string) error {
 	if layouts != "" {
 		prtty.Default.Printf("    layouts: %s", layouts)
 	}
-	templateData, err := generateTemplateData(src, dest, includes, layouts)
+	if packageName != "" {
+		prtty.Default.Printf("    package: %s", packageName)
+	}
+	templateData, err := generateTemplateData(src, dest, includes, layouts, packageName)
 	if err != nil {
 		return err
 	}
@@ -191,8 +196,10 @@ func ParseTemplateFiles(dir string) ([]*TemplateFile, error) {
 	return templateFiles, nil
 }
 
-func generateTemplateData(src, dest, includes, layouts string) (TemplateData, error) {
-	packageName := filepath.Base(filepath.Dir(dest))
+func generateTemplateData(src, dest, includes, layouts, packageName string) (TemplateData, error) {
+	if packageName == "" {
+		packageName = filepath.Base(filepath.Dir(dest))
+	}
 	templateData := TemplateData{
 		PackageName: packageName,
 	}
