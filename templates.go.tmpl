@@ -5,83 +5,86 @@ package {{ .PackageName }}
 
 import (
 	"html/template"
+	"strings"
 )
 
 var (
-	Templates = struct{ {{ range .Templates }}
-		{{ .VarName }} *template.Template
-	{{ end }}}{ {{ range .Templates }}
-		{{ .VarName }}: template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
-	{{ end }}}
+	Templates = map[string]*template.Template { {{ range .Templates }}
+		"{{ .Name }}": template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),{{ end }}
+	}
+	{{ if .Views }}
+	Views = map[string]*template.Template { {{ range .Views }}
+		strings.TrimPrefix("{{ . }}", "views/"): Templates["{{ . }}"],{{ end }}
+	}
+	{{ end }}
 	{{ if .Includes }}
-	includes = map[string]*template.Template{ {{ range .Includes }}
-			"{{ .Name }}": template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
-	{{ end }}}
+	Includes = map[string]*template.Template { {{ range .Includes }}
+		strings.TrimPrefix("{{ . }}", "includes/"): Templates["{{ . }}"],{{ end }}
+	}
 	{{ end }}
 	{{ if .Layouts }}
-	layouts = map[string]*template.Template{ {{ range .Layouts }}
-			"{{ .Name }}": template.Must(template.New("{{ .Name }}").Parse(`{{ .Source }}`)),
-	{{ end }}}
+	Layouts = map[string]*template.Template { {{ range .Layouts }}
+		strings.TrimPrefix("{{ . }}", "layouts/"): Templates["{{ . }}"],{{ end }}
+	}
 	{{ end }}
 )
 
-{{ if or .Includes .Layouts }}
+{{ if or .Views .Includes .Layouts }}
 func init() {
 	var err error
 	
-	{{ if .Includes }}// Add the includes to the parse tree of every other includes
-	for includeName, include := range includes {
-		for otherName, other := range includes {
-			if includeName == otherName {
+	{{ if .Includes }}
+	// Add each include to the parse tree of every other include
+	for _, include := range Includes {
+		for _, other := range Includes {
+			if include.Name() == other.Name() {
 				continue
 			}
-			includes[includeName], err = include.AddParseTree(other.Name(), other.Tree)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	// Add the includes to the parse tree of every regular template
-	{{ range .Templates }}for _, include := range includes {
-		Templates.{{ .VarName }}, err = Templates.{{ .VarName }}.AddParseTree(include.Name(), include.Tree)
-		if err != nil {
-			panic(err)
-		}
-	}
-	{{ end }}{{ end }}
-
-	{{ if .Layouts }}// Add the layouts to the parse tree of every other layout
-	for layoutName, layout := range layouts {
-		for otherName, other := range layouts {
-			if layoutName == otherName {
-				continue
-			}
-			layouts[layoutName], err = layout.AddParseTree(other.Name(), other.Tree)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-	
-	// Add the layouts to the parse tree of every regular template
-	{{ range .Templates }}for _, layout := range layouts {
-		Templates.{{ .VarName }}, err = Templates.{{ .VarName }}.AddParseTree(layout.Name(), layout.Tree)
-		if err != nil {
-			panic(err)
-		}
-	}
-	{{ end }}{{ end }}
-
-	{{ if and .Layouts .Includes }}// Add the includes to the parse tree of each layout
-	for layoutName, layout  := range layouts {
-		for _, include := range includes {
-			layouts[layoutName], err = layout.AddParseTree(include.Name(), include.Tree)
-			if err != nil {
-				panic(err)
+			// Add other to include's parse tree only if it has not already been
+			// added by association.
+			// TODO: is there a more effecient way to do this?
+			if include.Lookup(other.Name()) == nil {
+				Includes[include.Name()], err = include.AddParseTree(other.Name(), other.Tree)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}{{ end }}
+
+	{{ if and .Includes .Views (not .Layouts) }}
+	// Add each include to the parse tree of every view
+	for _, include := range Includes {
+		for _, view := range Views {
+			Views[view.Name()], err = view.AddParseTree(include.Name(), include.Tree)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+	{{ end }}
+
+	{{ if and .Includes .Layouts }}
+	// Add the includes to the parse tree of every layout
+	include := Includes["{{ index .Includes 0 }}"]
+	for _, layout := range Layouts {
+		Layouts[layout.Name()], err = layout.AddParseTree(include.Name(), include.Tree)
+		if err != nil {
+			panic(err)
+		}
+	}
+	{{ end }}
+
+	{{ if and .Layouts .Views }}
+	// Add each layout to the parse tree of every view
+	for _, layout := range Layouts {
+		for _, view := range Views {
+			Views[view.Name()], err = view.AddParseTree(layout.Name(), layout.Tree)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+	{{ end }}
 }
 {{ end }}
-

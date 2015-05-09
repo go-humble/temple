@@ -96,16 +96,18 @@ As a consequence, regular templates also cannot reference eachother.
 				prtty.DefaultLoggers.SetOutput(ioutil.Discard)
 				prtty.Error.Output = os.Stderr
 			}
+			views := cmd.Flag("views").Value.String()
 			includes := cmd.Flag("includes").Value.String()
 			layouts := cmd.Flag("layouts").Value.String()
 			packageName := cmd.Flag("package").Value.String()
-			if err := build(args[0], args[1], includes, layouts, packageName); err != nil {
+			if err := build(args[0], args[1], views, includes, layouts, packageName); err != nil {
 				prtty.Error.Fatal(err)
 			}
 		},
 	}
-	cmdBuild.Flags().String("includes", "", "(optional) The directory to look for includes. Includes are .tmpl files that are shared between layouts and all templates.")
-	cmdBuild.Flags().String("layouts", "", "(optional) The directory to look for layouts. Layouts are .tmpl shared between all templates and have access to includes.")
+	cmdBuild.Flags().String("views", "", "(optional) The directory to look for views. Views are .tmpl files that represent a complete page and have access to all layouts and includes.")
+	cmdBuild.Flags().String("includes", "", "(optional) The directory to look for includes. Includes are .tmpl files that are shared between layouts and views.")
+	cmdBuild.Flags().String("layouts", "", "(optional) The directory to look for layouts. Layouts are .tmpl files that have access to includes and are shared between all templates.")
 	cmdBuild.Flags().String("package", "", "(optional) The package name to use in the generated go file. If not provided, the package name will be the directory the file is in.")
 	cmdBuild.Flags().BoolVar(&quiet, "quiet", false, "If true, temple will only print to the terminal if there was an error.")
 
@@ -127,23 +129,26 @@ As a consequence, regular templates also cannot reference eachother.
 	}
 }
 
-type TemplateData struct {
+type data struct {
 	PackageName string
-	Templates   []*TemplateFile
-	Includes    []*TemplateFile
-	Layouts     []*TemplateFile
+	Templates   map[string]templateSource
+	Views       []string
+	Includes    []string
+	Layouts     []string
 }
 
-type TemplateFile struct {
-	VarName string
-	Name    string
-	Source  string
+type templateSource struct {
+	Name   string
+	Source string
 }
 
-func build(src, dest, includes, layouts, packageName string) error {
+func build(src, dest, views, includes, layouts, packageName string) error {
 	prtty.Info.Println("--> building...")
 	prtty.Default.Printf("    src: %s", src)
 	prtty.Default.Printf("    dest: %s", dest)
+	if views != "" {
+		prtty.Default.Printf("    views: %s", views)
+	}
 	if includes != "" {
 		prtty.Default.Printf("    includes: %s", includes)
 	}
@@ -153,11 +158,14 @@ func build(src, dest, includes, layouts, packageName string) error {
 	if packageName != "" {
 		prtty.Default.Printf("    package: %s", packageName)
 	}
-	templateData, err := generateTemplateData(src, dest, includes, layouts, packageName)
+	if !strings.HasSuffix(src, "/") {
+		src += "/"
+	}
+	data, err := compileTemplates(src, dest, views, includes, layouts, packageName)
 	if err != nil {
 		return err
 	}
-	if err := writeFile(templateData, dest); err != nil {
+	if err := writeFile(data, dest); err != nil {
 		return err
 	}
 	if err := formatFile(dest); err != nil {
@@ -167,78 +175,105 @@ func build(src, dest, includes, layouts, packageName string) error {
 	return nil
 }
 
-func NewTemplateFile(prefix, filename string) (*TemplateFile, error) {
-	// baseName is everything after the last slash, not including the file extension
-	baseName := strings.TrimSuffix(filepath.Base(filename), ".tmpl")
-	// name (i.e. the name of the template) is the prefix + baseName
-	name := prefix + baseName
-	// varName is just the name titlized so it is an exported variable
-	varName := strings.Title(name)
+func newtemplateSource(baseDir, filename string) (templateSource, error) {
+	name := strings.TrimSuffix(strings.TrimPrefix(filename, baseDir), ".tmpl")
 	fileContents, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return templateSource{}, err
 	}
-	return &TemplateFile{
-		VarName: varName,
-		Name:    name,
-		Source:  string(fileContents),
+	return templateSource{
+		Name:   name,
+		Source: string(fileContents),
 	}, nil
 }
 
-func ParseTemplateFiles(prefix, dir string) ([]*TemplateFile, error) {
-	templateFiles := []*TemplateFile{}
-	files, err := filepath.Glob(filepath.Join(dir, "*.tmpl"))
-	if err != nil {
+func findTemplateFiles(dir string) ([]string, error) {
+	files := []string{}
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".tmpl") {
+			prtty.Default.Printf("    %s", path)
+			files = append(files, path)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 	if len(files) == 0 {
 		prtty.Warn.Printf("    WARNING: No .tmpl files found in %s", dir)
 	}
+	return files, nil
+}
+
+func parseTemplateFiles(baseDir string) (map[string]templateSource, error) {
+	sources := map[string]templateSource{}
+	files, err := findTemplateFiles(baseDir)
+	if err != nil {
+		return nil, err
+	}
 	for _, filename := range files {
-		prtty.Default.Printf("    %s", filename)
-		tf, err := NewTemplateFile(prefix, filename)
+		source, err := newtemplateSource(baseDir, filename)
 		if err != nil {
 			return nil, err
 		}
-		templateFiles = append(templateFiles, tf)
+		sources[source.Name] = source
 	}
-	return templateFiles, nil
+	return sources, nil
 }
 
-func generateTemplateData(src, dest, includes, layouts, packageName string) (TemplateData, error) {
+func getTemplateNames(baseDir, dir string) ([]string, error) {
+	names := []string{}
+	files, err := findTemplateFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, filename := range files {
+		name := strings.TrimSuffix(strings.TrimPrefix(filename, baseDir), ".tmpl")
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+func compileTemplates(src, dest, views, includes, layouts, packageName string) (data, error) {
 	if packageName == "" {
 		packageName = filepath.Base(filepath.Dir(dest))
 	}
-	templateData := TemplateData{
+	data := data{
 		PackageName: packageName,
 	}
-
+	prtty.Info.Println("--> parsing templates...")
+	templates, err := parseTemplateFiles(src)
+	if err != nil {
+		return data, err
+	}
+	data.Templates = templates
+	if views != "" {
+		prtty.Info.Println("--> parsing views...")
+		viewNames, err := getTemplateNames(src, views)
+		if err != nil {
+			return data, err
+		}
+		data.Views = viewNames
+	}
 	if includes != "" {
 		prtty.Info.Println("--> parsing includes...")
-		includes, err := ParseTemplateFiles("includes/", includes)
+		includeNames, err := getTemplateNames(src, includes)
 		if err != nil {
-			return templateData, err
+			return data, err
 		}
-		templateData.Includes = includes
+		data.Includes = includeNames
 	}
 	if layouts != "" {
 		prtty.Info.Println("--> parsing layouts...")
-		layouts, err := ParseTemplateFiles("layouts/", layouts)
+		layoutNames, err := getTemplateNames(src, layouts)
 		if err != nil {
-			return templateData, err
+			return data, err
 		}
-		templateData.Layouts = layouts
+		data.Layouts = layoutNames
 	}
-	prtty.Info.Println("--> parsing templates...")
-	templates, err := ParseTemplateFiles("", src)
-	if err != nil {
-		return templateData, err
-	}
-	templateData.Templates = templates
-	return templateData, nil
+	return data, nil
 }
 
-func writeFile(data TemplateData, dest string) error {
+func writeFile(data data, dest string) error {
 	prtty.Info.Println("--> generating go code...")
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
