@@ -77,3 +77,25 @@ func TestAddLayout(t *testing.T) {
 	}
 	ExpectExecutorOutputs(t, testTmpl, nil, "<h2>test foo</h2>")
 }
+
+func TestAddAllFiles(t *testing.T) {
+	defer reset()
+	// Load all the files from the test_files directory
+	if err := AddAllFiles("test_files/templates", "test_files/partials", "test_files/layouts"); err != nil {
+		t.Fatalf("Unexpected error in AddAllFiles: %s", err.Error())
+	}
+	// Try rendering the todos/index template with some data
+	type Todo struct {
+		Title string
+	}
+	todos := []Todo{
+		{Title: "One"},
+		{Title: "Two"},
+		{Title: "Three"},
+	}
+	todosTmpl, found := Templates["todos/index"]
+	if !found {
+		t.Fatal(`Template named "todos/index" was not added to map of Templates`)
+	}
+	ExpectExecutorOutputs(t, todosTmpl, todos, "<html><head><title>Todos</title></head><body><ul><li>One</li><li>Two</li><li>Three</li></ul></body></html>")
+}
