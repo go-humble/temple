@@ -3,6 +3,9 @@ package temple
 import (
 	"html/template"
 	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -68,15 +71,15 @@ func AddTemplate(name, src string) error {
 }
 
 func AddTemplateFile(name, filename string) error {
-	tmpl, err := template.New(name).Funcs(Funcs).ParseFiles(filename)
+	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	template := Template{
-		Template: tmpl,
-	}
-	Templates[tmpl.Name()] = template
-	return associateTemplate(template)
+	return AddTemplate(name, string(src))
+}
+
+func AddTemplateFiles(dir string) error {
+	return collectTemplateFiles(dir, AddTemplateFile)
 }
 
 func associateTemplate(template Template) error {
@@ -112,15 +115,15 @@ func AddPartial(name, src string) error {
 }
 
 func AddPartialFile(name, filename string) error {
-	tmpl, err := template.New(name).Funcs(Funcs).ParseFiles(filename)
+	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	partial := Partial{
-		Template: tmpl,
-	}
-	Partials[tmpl.Name()] = partial
-	return associatePartial(partial)
+	return AddPartial(name, string(src))
+}
+
+func AddPartialFiles(dir string) error {
+	return collectTemplateFiles(dir, AddPartialFile)
 }
 
 func associatePartial(partial Partial) error {
@@ -172,15 +175,28 @@ func AddLayout(name, src string) error {
 }
 
 func AddLayoutFile(name, filename string) error {
-	tmpl, err := template.New(name).Funcs(Funcs).ParseFiles(filename)
+	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	layout := Layout{
-		Template: tmpl,
+	return AddLayout(name, string(src))
+}
+
+func AddLayoutFiles(dir string) error {
+	return collectTemplateFiles(dir, AddLayoutFile)
+}
+
+func AddAllFiles(templatesDir, partialsDir, layoutsDir string) error {
+	for dir, f := range map[string]func(string) error{
+		templatesDir: AddTemplateFiles,
+		partialsDir:  AddPartialFiles,
+		layoutsDir:   AddLayoutFiles,
+	} {
+		if err := f(dir); err != nil {
+			return err
+		}
 	}
-	Layouts[tmpl.Name()] = layout
-	return associateLayout(layout)
+	return nil
 }
 
 func associateLayout(layout Layout) error {
@@ -199,6 +215,22 @@ func associateLayout(layout Layout) error {
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+func collectTemplateFiles(dir string, add func(name, filename string) error) error {
+	dir = filepath.Clean(dir)
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".tmpl") {
+			name := strings.TrimSuffix(strings.TrimPrefix(path, dir+string(os.PathSeparator)), ".tmpl")
+			if err := add(name, path); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 	return nil
 }
