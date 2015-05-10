@@ -26,8 +26,17 @@ type Layout struct {
 	*template.Template
 }
 
+// Executor represents some type of template that is capable of executing (i.e. rendering)
+// to an io.Writer with some data. It is satisfied by Template, Partial, and Layout as well
+// as the builtin template.Template.
 type Executor interface {
 	Execute(wr io.Writer, data interface{}) error
+}
+
+func reset() {
+	Templates = map[string]Template{}
+	Partials = map[string]Partial{}
+	Layouts = map[string]Layout{}
 }
 
 func (p Partial) PrefixedName() string {
@@ -46,8 +55,11 @@ func (l Layout) PrefixedName() string {
 	}
 }
 
-func AddTemplate(tmpl *template.Template) error {
-	tmpl.Funcs(Funcs)
+func AddTemplate(name, src string) error {
+	tmpl, err := template.New(name).Funcs(Funcs).Parse(src)
+	if err != nil {
+		return err
+	}
 	template := Template{
 		Template: tmpl,
 	}
@@ -71,8 +83,11 @@ func AddTemplate(tmpl *template.Template) error {
 	return nil
 }
 
-func AddPartial(tmpl *template.Template) error {
-	tmpl.Funcs(Funcs)
+func AddPartial(name, src string) error {
+	tmpl, err := template.New(name).Funcs(Funcs).Parse(src)
+	if err != nil {
+		return err
+	}
 	partial := Partial{
 		Template: tmpl,
 	}
@@ -112,8 +127,11 @@ func AddPartial(tmpl *template.Template) error {
 	return nil
 }
 
-func AddLayout(tmpl *template.Template) error {
-	tmpl.Funcs(Funcs)
+func AddLayout(name, src string) error {
+	tmpl, err := template.New(name).Funcs(Funcs).Parse(src)
+	if err != nil {
+		return err
+	}
 	layout := Layout{
 		Template: tmpl,
 	}
@@ -135,22 +153,4 @@ func AddLayout(tmpl *template.Template) error {
 		}
 	}
 	return nil
-}
-
-func AddFunc(name string, f interface{}) {
-	// Add the func the global list of funcs
-	Funcs[name] = f
-	// Add the func to each template, partial, and layout
-	newFuncs := map[string]interface{}{
-		name: f,
-	}
-	for _, template := range Templates {
-		template.Funcs(newFuncs)
-	}
-	for _, partial := range Partials {
-		partial.Funcs(newFuncs)
-	}
-	for _, layout := range Layouts {
-		layout.Funcs(newFuncs)
-	}
 }

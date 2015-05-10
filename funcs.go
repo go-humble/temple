@@ -1,40 +1,18 @@
 package temple
 
 import (
-	"bytes"
-	"fmt"
 	"html/template"
 )
 
 var (
-	Funcs = map[string]interface{}{
-		"partial": PartialHelper,
-		"layout":  LayoutHelper,
-	}
+	// Funcs are helper functions which can be called by all templates, partials, and layouts.
+	Funcs = template.FuncMap{}
 )
 
-func PartialHelper(name string, context interface{}) (template.HTML, error) {
-	partial, found := Partials[name]
-	if !found {
-		return "", fmt.Errorf("temple: Error in func partial: Could not find partial with name: %s", name)
-	}
-	// TODO: use a buffer pool
-	buf := bytes.NewBuffer([]byte{})
-	if err := partial.Execute(buf, context); err != nil {
-		return "", fmt.Errorf("temple: Error in func partial: %s", err.Error())
-	}
-	return template.HTML(buf.String()), nil
-}
-
-func LayoutHelper(name string, context interface{}) (template.HTML, error) {
-	layout, found := Layouts[name]
-	if !found {
-		return "", fmt.Errorf("temple: Error in func layout: Could not find layout with name: %s", name)
-	}
-	// TODO: use a buffer pool
-	buf := bytes.NewBuffer([]byte{})
-	if err := layout.Execute(buf, context); err != nil {
-		return "", fmt.Errorf("temple: Error in func layout: %s", err.Error())
-	}
-	return template.HTML(buf.String()), nil
+// AddFunc adds the function f to Funcs and makes it callable by name by all templates, partials, and layouts.
+// f must follow the conventions described at http://golang.org/pkg/text/template/#FuncMap. Namely, f must have
+// either a single return value, or two return values of which the second has type error. AddFunc must be called
+// before AddTemplate, AddPartial, or AddLayout in order for the functions to be accessible.
+func AddFunc(name string, f interface{}) {
+	Funcs[name] = f
 }
