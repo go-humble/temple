@@ -64,6 +64,22 @@ func AddTemplate(name, src string) error {
 		Template: tmpl,
 	}
 	Templates[tmpl.Name()] = template
+	return associateTemplate(template)
+}
+
+func AddTemplateFile(name, filename string) error {
+	tmpl, err := template.New(name).Funcs(Funcs).ParseFiles(filename)
+	if err != nil {
+		return err
+	}
+	template := Template{
+		Template: tmpl,
+	}
+	Templates[tmpl.Name()] = template
+	return associateTemplate(template)
+}
+
+func associateTemplate(template Template) error {
 	// Associate each partial with this template
 	for _, partial := range Partials {
 		if template.Lookup(partial.PrefixedName()) == nil {
@@ -92,6 +108,22 @@ func AddPartial(name, src string) error {
 		Template: tmpl,
 	}
 	Partials[tmpl.Name()] = partial
+	return associatePartial(partial)
+}
+
+func AddPartialFile(name, filename string) error {
+	tmpl, err := template.New(name).Funcs(Funcs).ParseFiles(filename)
+	if err != nil {
+		return err
+	}
+	partial := Partial{
+		Template: tmpl,
+	}
+	Partials[tmpl.Name()] = partial
+	return associatePartial(partial)
+}
+
+func associatePartial(partial Partial) error {
 	// Associate this partial with every template
 	for _, template := range Templates {
 		if template.Lookup(partial.PrefixedName()) == nil {
@@ -136,10 +168,26 @@ func AddLayout(name, src string) error {
 		Template: tmpl,
 	}
 	Layouts[tmpl.Name()] = layout
+	return associateLayout(layout)
+}
+
+func AddLayoutFile(name, filename string) error {
+	tmpl, err := template.New(name).Funcs(Funcs).ParseFiles(filename)
+	if err != nil {
+		return err
+	}
+	layout := Layout{
+		Template: tmpl,
+	}
+	Layouts[tmpl.Name()] = layout
+	return associateLayout(layout)
+}
+
+func associateLayout(layout Layout) error {
 	// Associate this layout with every template
 	for _, template := range Templates {
 		if template.Lookup(layout.PrefixedName()) == nil {
-			if _, err := template.AddParseTree(layout.PrefixedName(), tmpl.Tree); err != nil {
+			if _, err := template.AddParseTree(layout.PrefixedName(), layout.Tree); err != nil {
 				return err
 			}
 		}
