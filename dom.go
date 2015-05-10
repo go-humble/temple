@@ -27,7 +27,7 @@ func (l *Layout) ExecuteToEl(el dom.Element, data interface{}) error {
 	return ExecuteToEl(l, el, data)
 }
 
-func AddInlineTemplates() error {
+func ParseInlineTemplates() error {
 	document := dom.GetWindow().Document()
 	elements := document.QuerySelectorAll(`script[type="text/template"]`)
 	for _, el := range elements {
