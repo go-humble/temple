@@ -219,12 +219,12 @@ func associateLayout(layout Layout) error {
 	return nil
 }
 
-func collectTemplateFiles(dir string, add func(name, filename string) error) error {
+func collectTemplateFiles(dir string, handler func(name, filename string) error) error {
 	dir = filepath.Clean(dir)
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".tmpl") {
 			name := strings.TrimSuffix(strings.TrimPrefix(path, dir+string(os.PathSeparator)), ".tmpl")
-			if err := add(name, path); err != nil {
+			if err := handler(name, path); err != nil {
 				return err
 			}
 		}

@@ -1,0 +1,31 @@
+package {{ .PackageName }}
+
+// This package has been automatically generated with temple.
+// Do not edit manually!
+
+import (
+	"html/template"
+	"github.com/albrow/temple"
+)
+
+func init() {
+	var err error
+
+	{{ range .Partials }}
+	if err = temple.AddPartial("{{ .Name }}, `{{ .Src }}`); err != nil {
+		panic(err)
+	}
+	{{ end }}
+
+	{{ range .Layouts }}
+	if err = temple.AddLayout("{{ .Name }}, `{{ .Src }}`); err != nil {
+		panic(err)
+	}
+	{{ end }}
+
+	{{ range .Templates }}
+	if err = temple.AddTemplate("{{ .Name }}, `{{ .Src }}`); err != nil {
+		panic(err)
+	}
+	{{ end }}
+}
