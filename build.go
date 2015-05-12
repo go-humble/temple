@@ -11,13 +11,6 @@ import (
 	"text/template"
 )
 
-var (
-	// NOTE: GOPATH might consist of multiple paths. If that is the case, we look in the first path.
-	gopath        = strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
-	templePath    = filepath.Join(gopath, "src", "github.com", "albrow", "temple")
-	generatedTmpl = template.Must(template.ParseFiles(filepath.Join(templePath, "generated.go.tmpl")))
-)
-
 func Build(src, dest, partials, layouts string) error {
 	// TODO: implement this!
 	prtty.Info.Println("--> building...")
@@ -37,7 +30,7 @@ func Build(src, dest, partials, layouts string) error {
 	if err := checkCompileTemplates(dirs); err != nil {
 		return err
 	}
-	if err := generateFile(dirs, layouts); err != nil {
+	if err := generateFile(dirs, dest); err != nil {
 		return err
 	}
 	return nil
@@ -133,10 +126,14 @@ func generateFile(dirs sourceDirGroup, dest string) error {
 
 func (data *templateData) writeToFile(dest string) error {
 	prtty.Success.Printf("    created %s", dest)
-	destFile, err := os.Open(dest)
+	destFile, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
+	// NOTE: GOPATH might consist of multiple paths. If that is the case, we look in the first path.
+	gopath := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
+	templePath := filepath.Join(gopath, "src", "github.com", "albrow", "temple")
+	generatedTmpl := template.Must(template.ParseFiles(filepath.Join(templePath, "generated.go.tmpl")))
 	return generatedTmpl.Execute(destFile, data)
 }
 
