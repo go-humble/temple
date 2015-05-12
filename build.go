@@ -33,6 +33,7 @@ func Build(src, dest, partials, layouts string) error {
 	if err := generateFile(dirs, dest); err != nil {
 		return err
 	}
+	prtty.Info.Println("--> done!")
 	return nil
 }
 
@@ -46,20 +47,17 @@ func checkCompileTemplates(dirs sourceDirGroup) error {
 		if err := AddPartialFiles(dirs.partials); err != nil {
 			return err
 		}
-		prtty.Default.Println("    ✓")
 	}
 	if dirs.layouts != "" {
 		prtty.Default.Println("    checking layouts...")
 		if err := AddLayoutFiles(dirs.layouts); err != nil {
 			return err
 		}
-		prtty.Default.Println("    ✓")
 	}
 	prtty.Default.Println("    checking templates...")
 	if err := AddTemplateFiles(dirs.templates); err != nil {
 		return err
 	}
-	prtty.Default.Println("    ✓")
 	return nil
 }
 
@@ -83,7 +81,7 @@ type sourceDirGroup struct {
 
 func (data *templateData) collectAllSourceFiles(dirs sourceDirGroup) error {
 	if dirs.partials != "" {
-		prtty.Default.Println("    collecting partials...")
+		prtty.Info.Println("--> collecting partials...")
 		partials, err := collectSourceFiles(dirs.partials)
 		if err != nil {
 			return err
@@ -91,14 +89,14 @@ func (data *templateData) collectAllSourceFiles(dirs sourceDirGroup) error {
 		data.Partials = partials
 	}
 	if dirs.layouts != "" {
-		prtty.Default.Println("    collecting layouts...")
+		prtty.Info.Println("--> collecting layouts...")
 		layouts, err := collectSourceFiles(dirs.layouts)
 		if err != nil {
 			return err
 		}
 		data.Layouts = layouts
 	}
-	prtty.Default.Println("    collecting templates...")
+	prtty.Info.Println("--> collecting templates...")
 	templates, err := collectSourceFiles(dirs.templates)
 	if err != nil {
 		return err
@@ -108,6 +106,7 @@ func (data *templateData) collectAllSourceFiles(dirs sourceDirGroup) error {
 }
 
 func generateFile(dirs sourceDirGroup, dest string) error {
+	prtty.Info.Println("--> generating go code...")
 	packageName := filepath.Base(filepath.Dir(dest))
 	data := &templateData{
 		PackageName: packageName,
