@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"text/template"
 )
 
@@ -128,10 +127,12 @@ func (data *templateData) writeToFile(dest string) error {
 	if err != nil {
 		return err
 	}
-	// NOTE: GOPATH might consist of multiple paths. If that is the case, we look in the first path.
-	gopath := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
-	templePath := filepath.Join(gopath, "src", "github.com", "go-humble", "temple", "temple")
-	generatedTmpl := template.Must(template.ParseFiles(filepath.Join(templePath, "generated.go.tmpl")))
+	//go:generate go-bindata --pkg=temple templates/...
+	tmplAsset, err := Asset("templates/generated.go.tmpl")
+	if err != nil {
+		return err
+	}
+	generatedTmpl := template.Must(template.New("generated").Parse(string(tmplAsset)))
 	return generatedTmpl.Execute(destFile, data)
 }
 
