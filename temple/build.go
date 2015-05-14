@@ -40,20 +40,21 @@ func checkCompileTemplates(dirs sourceDirGroup) error {
 	if dirs.templates == "" {
 		return errors.New("temple: templates dir cannot be an empty string.")
 	}
+	g := &Group{}
 	if dirs.partials != "" {
 		prtty.Default.Println("    checking partials...")
-		if err := AddPartialFiles(dirs.partials); err != nil {
+		if err := g.AddPartialFiles(dirs.partials); err != nil {
 			return err
 		}
 	}
 	if dirs.layouts != "" {
 		prtty.Default.Println("    checking layouts...")
-		if err := AddLayoutFiles(dirs.layouts); err != nil {
+		if err := g.AddLayoutFiles(dirs.layouts); err != nil {
 			return err
 		}
 	}
 	prtty.Default.Println("    checking templates...")
-	if err := AddTemplateFiles(dirs.templates); err != nil {
+	if err := g.AddTemplateFiles(dirs.templates); err != nil {
 		return err
 	}
 	return nil
