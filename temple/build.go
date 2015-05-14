@@ -12,7 +12,6 @@ import (
 )
 
 func Build(src, dest, partials, layouts string) error {
-	// TODO: implement this!
 	prtty.Info.Println("--> building...")
 	prtty.Default.Printf("    src: %s", src)
 	prtty.Default.Printf("    dest: %s", dest)
