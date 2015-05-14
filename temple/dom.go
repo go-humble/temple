@@ -27,25 +27,25 @@ func (l *Layout) ExecuteToEl(el dom.Element, data interface{}) error {
 	return ExecuteToEl(l, el, data)
 }
 
-func ParseInlineTemplates() error {
+func (g *Group) ParseInlineTemplates() error {
 	document := dom.GetWindow().Document()
 	elements := document.QuerySelectorAll(`script[type="text/template"]`)
 	for _, el := range elements {
 		switch el.GetAttribute("data-kind") {
 		case "template":
-			if err := AddInlineTemplate(el); err != nil {
+			if err := g.AddInlineTemplate(el); err != nil {
 				return err
 			}
 		case "partial":
-			if err := AddInlinePartial(el); err != nil {
+			if err := g.AddInlinePartial(el); err != nil {
 				return err
 			}
 		case "layout":
-			if err := AddInlineLayout(el); err != nil {
+			if err := g.AddInlineLayout(el); err != nil {
 				return err
 			}
 		default:
-			if err := AddInlineTemplate(el); err != nil {
+			if err := g.AddInlineTemplate(el); err != nil {
 				return err
 			}
 		}
@@ -53,14 +53,14 @@ func ParseInlineTemplates() error {
 	return nil
 }
 
-func AddInlineTemplate(el dom.Element) error {
-	return AddTemplate(el.ID(), el.InnerHTML())
+func (g *Group) AddInlineTemplate(el dom.Element) error {
+	return g.AddTemplate(el.ID(), el.InnerHTML())
 }
 
-func AddInlinePartial(el dom.Element) error {
-	return AddPartial(el.ID(), el.InnerHTML())
+func (g *Group) AddInlinePartial(el dom.Element) error {
+	return g.AddPartial(el.ID(), el.InnerHTML())
 }
 
-func AddInlineLayout(el dom.Element) error {
-	return AddLayout(el.ID(), el.InnerHTML())
+func (g *Group) AddInlineLayout(el dom.Element) error {
+	return g.AddLayout(el.ID(), el.InnerHTML())
 }

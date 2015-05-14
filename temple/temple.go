@@ -10,9 +10,6 @@ import (
 )
 
 var (
-	Templates     = map[string]Template{}
-	Partials      = map[string]Partial{}
-	Layouts       = map[string]Layout{}
 	PartialPrefix = "partials/"
 	LayoutPrefix  = "layouts/"
 )
@@ -29,6 +26,18 @@ type Layout struct {
 	*template.Template
 }
 
+// A Group represents a set of associated Templates, Partials, and Layouts.
+// Each Group also gets its own template.FuncMap called Funcs.
+type Group struct {
+	Templates map[string]Template
+	Partials  map[string]Partial
+	Layouts   map[string]Layout
+	// Funcs is a map of function names to functions. All functions in the
+	// FuncMap are accessible by all Templates, Partials, and Layouts for
+	// this Group.
+	Funcs template.FuncMap
+}
+
 // Executor represents some type of template that is capable of executing (i.e. rendering)
 // to an io.Writer with some data. It is satisfied by Template, Partial, and Layout as well
 // as the builtin template.Template.
@@ -36,10 +45,18 @@ type Executor interface {
 	Execute(wr io.Writer, data interface{}) error
 }
 
-func reset() {
-	Templates = map[string]Template{}
-	Partials = map[string]Partial{}
-	Layouts = map[string]Layout{}
+// NewGroup creates, initializes, and returns a new Group
+func NewGroup() *Group {
+	return &Group{
+		Templates: map[string]Template{},
+		Partials:  map[string]Partial{},
+		Layouts:   map[string]Layout{},
+		Funcs:     template.FuncMap{},
+	}
+}
+
+func (g *Group) AddFunc(name string, f interface{}) {
+	g.Funcs[name] = f
 }
 
 func (p Partial) PrefixedName() string {
@@ -58,33 +75,33 @@ func (l Layout) PrefixedName() string {
 	}
 }
 
-func AddTemplate(name, src string) error {
-	tmpl, err := template.New(name).Funcs(Funcs).Parse(src)
+func (g *Group) AddTemplate(name, src string) error {
+	tmpl, err := template.New(name).Funcs(g.Funcs).Parse(src)
 	if err != nil {
 		return err
 	}
 	template := Template{
 		Template: tmpl,
 	}
-	Templates[tmpl.Name()] = template
-	return associateTemplate(template)
+	g.Templates[tmpl.Name()] = template
+	return g.associateTemplate(template)
 }
 
-func AddTemplateFile(name, filename string) error {
+func (g *Group) AddTemplateFile(name, filename string) error {
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	return AddTemplate(name, string(src))
+	return g.AddTemplate(name, string(src))
 }
 
-func AddTemplateFiles(dir string) error {
-	return collectTemplateFiles(dir, AddTemplateFile)
+func (g *Group) AddTemplateFiles(dir string) error {
+	return collectTemplateFiles(dir, g.AddTemplateFile)
 }
 
-func associateTemplate(template Template) error {
+func (g *Group) associateTemplate(template Template) error {
 	// Associate each partial with this template
-	for _, partial := range Partials {
+	for _, partial := range g.Partials {
 		if template.Lookup(partial.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -92,7 +109,7 @@ func associateTemplate(template Template) error {
 		}
 	}
 	// Associate each layout with this template
-	for _, layout := range Layouts {
+	for _, layout := range g.Layouts {
 		if template.Lookup(layout.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(layout.PrefixedName(), layout.Tree); err != nil {
 				return err
@@ -102,33 +119,33 @@ func associateTemplate(template Template) error {
 	return nil
 }
 
-func AddPartial(name, src string) error {
-	tmpl, err := template.New(name).Funcs(Funcs).Parse(src)
+func (g *Group) AddPartial(name, src string) error {
+	tmpl, err := template.New(name).Funcs(g.Funcs).Parse(src)
 	if err != nil {
 		return err
 	}
 	partial := Partial{
 		Template: tmpl,
 	}
-	Partials[tmpl.Name()] = partial
-	return associatePartial(partial)
+	g.Partials[tmpl.Name()] = partial
+	return g.associatePartial(partial)
 }
 
-func AddPartialFile(name, filename string) error {
+func (g *Group) AddPartialFile(name, filename string) error {
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	return AddPartial(name, string(src))
+	return g.AddPartial(name, string(src))
 }
 
-func AddPartialFiles(dir string) error {
-	return collectTemplateFiles(dir, AddPartialFile)
+func (g *Group) AddPartialFiles(dir string) error {
+	return collectTemplateFiles(dir, g.AddPartialFile)
 }
 
-func associatePartial(partial Partial) error {
+func (g *Group) associatePartial(partial Partial) error {
 	// Associate this partial with every template
-	for _, template := range Templates {
+	for _, template := range g.Templates {
 		if template.Lookup(partial.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -136,7 +153,7 @@ func associatePartial(partial Partial) error {
 		}
 	}
 	// Associate this partial with every other partial
-	for _, other := range Partials {
+	for _, other := range g.Partials {
 		if other.Lookup(partial.PrefixedName()) == nil {
 			if _, err := other.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -144,7 +161,7 @@ func associatePartial(partial Partial) error {
 		}
 	}
 	// Associate every other partial with this partial
-	for _, other := range Partials {
+	for _, other := range g.Partials {
 		if partial.Lookup(partial.PrefixedName()) == nil {
 			if _, err := partial.AddParseTree(partial.PrefixedName(), other.Tree); err != nil {
 				return err
@@ -152,7 +169,7 @@ func associatePartial(partial Partial) error {
 		}
 	}
 	// Associate this partial with every layout
-	for _, layout := range Layouts {
+	for _, layout := range g.Layouts {
 		if layout.Lookup(partial.PrefixedName()) == nil {
 			if _, err := layout.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -162,35 +179,35 @@ func associatePartial(partial Partial) error {
 	return nil
 }
 
-func AddLayout(name, src string) error {
-	tmpl, err := template.New(name).Funcs(Funcs).Parse(src)
+func (g *Group) AddLayout(name, src string) error {
+	tmpl, err := template.New(name).Funcs(g.Funcs).Parse(src)
 	if err != nil {
 		return err
 	}
 	layout := Layout{
 		Template: tmpl,
 	}
-	Layouts[tmpl.Name()] = layout
-	return associateLayout(layout)
+	g.Layouts[tmpl.Name()] = layout
+	return g.associateLayout(layout)
 }
 
-func AddLayoutFile(name, filename string) error {
+func (g *Group) AddLayoutFile(name, filename string) error {
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	return AddLayout(name, string(src))
+	return g.AddLayout(name, string(src))
 }
 
-func AddLayoutFiles(dir string) error {
-	return collectTemplateFiles(dir, AddLayoutFile)
+func (g *Group) AddLayoutFiles(dir string) error {
+	return collectTemplateFiles(dir, g.AddLayoutFile)
 }
 
-func AddAllFiles(templatesDir, partialsDir, layoutsDir string) error {
+func (g *Group) AddAllFiles(templatesDir, partialsDir, layoutsDir string) error {
 	for dir, f := range map[string]func(string) error{
-		templatesDir: AddTemplateFiles,
-		partialsDir:  AddPartialFiles,
-		layoutsDir:   AddLayoutFiles,
+		templatesDir: g.AddTemplateFiles,
+		partialsDir:  g.AddPartialFiles,
+		layoutsDir:   g.AddLayoutFiles,
 	} {
 		if err := f(dir); err != nil {
 			return err
@@ -199,9 +216,9 @@ func AddAllFiles(templatesDir, partialsDir, layoutsDir string) error {
 	return nil
 }
 
-func associateLayout(layout Layout) error {
+func (g *Group) associateLayout(layout Layout) error {
 	// Associate this layout with every template
-	for _, template := range Templates {
+	for _, template := range g.Templates {
 		if template.Lookup(layout.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(layout.PrefixedName(), layout.Tree); err != nil {
 				return err
@@ -209,7 +226,7 @@ func associateLayout(layout Layout) error {
 		}
 	}
 	// Associate each partial with this layout
-	for _, partial := range Partials {
+	for _, partial := range g.Partials {
 		if layout.Lookup(layout.PrefixedName()) == nil {
 			if _, err := layout.AddParseTree(layout.PrefixedName(), partial.Tree); err != nil {
 				return err
