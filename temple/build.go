@@ -40,7 +40,7 @@ func checkCompileTemplates(dirs sourceDirGroup) error {
 	if dirs.templates == "" {
 		return errors.New("temple: templates dir cannot be an empty string.")
 	}
-	g := &Group{}
+	g := NewGroup()
 	if dirs.partials != "" {
 		prtty.Default.Println("    checking partials...")
 		if err := g.AddPartialFiles(dirs.partials); err != nil {
@@ -122,13 +122,14 @@ func generateFile(dirs sourceDirGroup, dest string) error {
 	return nil
 }
 
+//go:generate go-bindata --pkg=temple templates/...
+
 func (data *templateData) writeToFile(dest string) error {
 	prtty.Success.Printf("    created %s", dest)
 	destFile, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	//go:generate go-bindata --pkg=temple templates/...
 	tmplAsset, err := Asset("templates/generated.go.tmpl")
 	if err != nil {
 		return err

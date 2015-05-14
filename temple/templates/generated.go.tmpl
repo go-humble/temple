@@ -1,8 +1,8 @@
-{{ /* 
+{{/* 
 	NOTE: this file is embedded via go-bindata (https://github.com/jteeuwen/go-bindata)
 	If you change it, be sure to run go generate ./...
 	If you need to install the go-bindata executable, run go get github.com/jteeuwen/go-bindata
-*/ }}
+*/}}
 package {{ .PackageName }}
 
 // This package has been automatically generated with temple.
@@ -12,24 +12,33 @@ import (
 	"github.com/go-humble/temple/temple"
 )
 
+var (
+	Templates map[string]temple.Template
+	Partials  map[string]temple.Partial
+	Layouts   map[string]temple.Layout
+)
+
 func init() {
 	var err error
-
+	g := temple.NewGroup()
 	{{ range .Partials }}
-	if err = temple.AddPartial("{{ .Name }}", `{{ .Src }}`); err != nil {
+	if err = g.AddPartial("{{ .Name }}", `{{ .Src }}`); err != nil {
 		panic(err)
 	}
 	{{ end }}
 
 	{{ range .Layouts }}
-	if err = temple.AddLayout("{{ .Name }}", `{{ .Src }}`); err != nil {
+	if err = g.AddLayout("{{ .Name }}", `{{ .Src }}`); err != nil {
 		panic(err)
 	}
 	{{ end }}
 
 	{{ range .Templates }}
-	if err = temple.AddTemplate("{{ .Name }}", `{{ .Src }}`); err != nil {
+	if err = g.AddTemplate("{{ .Name }}", `{{ .Src }}`); err != nil {
 		panic(err)
 	}
 	{{ end }}
+	Templates = g.Templates
+	Partials = g.Partials
+	Layouts = g.Layouts
 }
