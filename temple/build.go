@@ -131,7 +131,7 @@ func (data *templateData) writeToFile(dest string) error {
 	}
 	// NOTE: GOPATH might consist of multiple paths. If that is the case, we look in the first path.
 	gopath := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
-	templePath := filepath.Join(gopath, "src", "github.com", "go-humble", "temple")
+	templePath := filepath.Join(gopath, "src", "github.com", "go-humble", "temple", "temple")
 	generatedTmpl := template.Must(template.ParseFiles(filepath.Join(templePath, "generated.go.tmpl")))
 	return generatedTmpl.Execute(destFile, data)
 }

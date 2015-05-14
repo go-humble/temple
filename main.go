@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/albrow/prtty"
-	"github.com/go-humble/temple"
+	"github.com/go-humble/temple/temple"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
