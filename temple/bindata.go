@@ -79,7 +79,7 @@ func templates_generated_go_tmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "templates/generated.go.tmpl", size: 1000, mode: os.FileMode(420), modTime: time.Unix(1431581189, 0)}
+	info := bindata_file_info{name: "templates/generated.go.tmpl", size: 1000, mode: os.FileMode(420), modTime: time.Unix(1431581234, 0)}
 	a := &asset{bytes: bytes, info:  info}
 	return a, nil
 }

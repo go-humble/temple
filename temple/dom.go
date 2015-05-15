@@ -5,7 +5,7 @@ import (
 	"honnef.co/go/js/dom"
 )
 
-func ExecuteToEl(e Executor, el dom.Element, data interface{}) error {
+func ExecuteEl(e Executor, el dom.Element, data interface{}) error {
 	// TODO: use a buffer pool
 	buf := bytes.NewBuffer([]byte{})
 	if err := e.Execute(buf, data); err != nil {
@@ -15,16 +15,16 @@ func ExecuteToEl(e Executor, el dom.Element, data interface{}) error {
 	return nil
 }
 
-func (t *Template) ExecuteToEl(el dom.Element, data interface{}) error {
-	return ExecuteToEl(t, el, data)
+func (t *Template) ExecuteEl(el dom.Element, data interface{}) error {
+	return ExecuteEl(t, el, data)
 }
 
-func (p *Partial) ExecuteToEl(el dom.Element, data interface{}) error {
-	return ExecuteToEl(p, el, data)
+func (p *Partial) ExecuteEl(el dom.Element, data interface{}) error {
+	return ExecuteEl(p, el, data)
 }
 
-func (l *Layout) ExecuteToEl(el dom.Element, data interface{}) error {
-	return ExecuteToEl(l, el, data)
+func (l *Layout) ExecuteEl(el dom.Element, data interface{}) error {
+	return ExecuteEl(l, el, data)
 }
 
 func (g *Group) ParseInlineTemplates() error {
