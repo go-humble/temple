@@ -44,13 +44,15 @@ func main() {
 			}
 			partials := cmd.Flag("partials").Value.String()
 			layouts := cmd.Flag("layouts").Value.String()
-			if err := temple.Build(args[0], args[1], partials, layouts); err != nil {
+			packageName := cmd.Flag("package").Value.String()
+			if err := temple.Build(args[0], args[1], partials, layouts, packageName); err != nil {
 				prtty.Error.Fatal(err)
 			}
 		},
 	}
 	cmdBuild.Flags().String("partials", "", "(optional) The directory to look for partials. Partials are .tmpl files that are associated with layouts and all other templates.")
 	cmdBuild.Flags().String("layouts", "", "(optional) The directory to look for layouts. Layouts are .tmpl files which have access to partials and are associated with all other templates.")
+	cmdBuild.Flags().String("package", "", "(optional) The package name for the generated go file. If not provided, the default will be the directory where the go file is created.")
 	cmdBuild.Flags().BoolVarP(&verbose, "verbose", "v", false, "If set to true, temple will print out information while building.")
 
 	// Define version command

@@ -11,7 +11,7 @@ import (
 	"text/template"
 )
 
-func Build(src, dest, partials, layouts string) error {
+func Build(src, dest, partials, layouts, packageName string) error {
 	prtty.Info.Println("--> building...")
 	prtty.Default.Printf("    src: %s", src)
 	prtty.Default.Printf("    dest: %s", dest)
@@ -21,6 +21,9 @@ func Build(src, dest, partials, layouts string) error {
 	if layouts != "" {
 		prtty.Default.Printf("    layouts: %s", layouts)
 	}
+	if packageName != "" {
+		prtty.Default.Printf("    package: %s", packageName)
+	}
 	dirs := sourceDirGroup{
 		templates: src,
 		partials:  partials,
@@ -29,7 +32,7 @@ func Build(src, dest, partials, layouts string) error {
 	if err := checkCompileTemplates(dirs); err != nil {
 		return err
 	}
-	if err := generateFile(dirs, dest); err != nil {
+	if err := generateFile(dirs, dest, packageName); err != nil {
 		return err
 	}
 	prtty.Info.Println("--> done!")
@@ -105,9 +108,11 @@ func (data *templateData) collectAllSourceFiles(dirs sourceDirGroup) error {
 	return nil
 }
 
-func generateFile(dirs sourceDirGroup, dest string) error {
+func generateFile(dirs sourceDirGroup, dest, packageName string) error {
 	prtty.Info.Println("--> generating go code...")
-	packageName := filepath.Base(filepath.Dir(dest))
+	if packageName == "" {
+		packageName = filepath.Base(filepath.Dir(dest))
+	}
 	data := &templateData{
 		PackageName: packageName,
 	}
