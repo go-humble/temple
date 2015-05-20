@@ -1,3 +1,8 @@
+// Copyright 2015 Alex Browne.
+// All rights reserved. Use of this source code is
+// governed by the MIT license, which can be found
+// in the LICENSE file.
+
 // NOTE: this file is meant to be run together with a generated file created
 // by Build. By itself it won't compile because Templates is not defined.
 
