@@ -264,5 +264,5 @@ See [CONTRIBUTING.md](https://github.com/go-humble/router/blob/master/CONTRIBUTI
 License
 -------
 
-Router is licensed under the MIT License. See the [LICENSE](https://github.com/go-humble/router/blob/master/LICENSE)
+Temple is licensed under the MIT License. See the [LICENSE](https://github.com/go-humble/router/blob/master/LICENSE)
 file for more information.
