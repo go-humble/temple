@@ -16,6 +16,12 @@ import (
 	"text/template"
 )
 
+// Build is the function called when you run the build sub-command
+// in the command line tool. It compiles all the templates in the
+// src directory and generates go code in the dest file. If partials
+// and/or layouts are provided, it will add them to the generated file
+// with calls to AddPartial and AddLayout. If packageName is an empty
+// string, the package name will be the directory of the dest file.
 func Build(src, dest, partials, layouts, packageName string) error {
 	prtty.Info.Println("--> building...")
 	prtty.Default.Printf("    src: %s", src)
@@ -44,6 +50,10 @@ func Build(src, dest, partials, layouts, packageName string) error {
 	return nil
 }
 
+// checkCompileTemplates compiles the templates, partials, and layouts
+// in dirs with the correct associations to make sure that the templates
+// compile. If they don't, we can catch errors early and return them when
+// the command line tool is invoked, instead of at runtime.
 func checkCompileTemplates(dirs sourceDirGroup) error {
 	prtty.Info.Println("--> checking for compilation errors...")
 	if dirs.templates == "" {
@@ -69,6 +79,7 @@ func checkCompileTemplates(dirs sourceDirGroup) error {
 	return nil
 }
 
+// templateData is passed in to the template for the generated code.
 type templateData struct {
 	PackageName string
 	Templates   []sourceFile
@@ -76,17 +87,25 @@ type templateData struct {
 	Layouts     []sourceFile
 }
 
+// sourceFile represents the source file for a template, partial, or layout.
 type sourceFile struct {
 	Name string
 	Src  string
 }
 
+// sourceDirGroup represents a group of source directories, consisting of a
+// directory for regular layouts and optionally for partials and layouts.
+// The directories for partials and layouts will be empty strings if they
+// were not provided.
 type sourceDirGroup struct {
 	templates string
 	partials  string
 	layouts   string
 }
 
+// collectAllSourceFiles walks recursively through the directories in dirs
+// and collects all template, partial, and layout source files, adding them
+// to data.
 func (data *templateData) collectAllSourceFiles(dirs sourceDirGroup) error {
 	if dirs.partials != "" {
 		prtty.Info.Println("--> collecting partials...")
@@ -113,6 +132,11 @@ func (data *templateData) collectAllSourceFiles(dirs sourceDirGroup) error {
 	return nil
 }
 
+// generateFile generates go code containing the contents of all the
+// files in the sourceDirGroup and writes the code to the dest file. It
+// uses the given packageName if it is non-empty, and otherwise falls back
+// to the directory that dest is in. If a file already exists at dest, it
+// will be overwritten.
 func generateFile(dirs sourceDirGroup, dest, packageName string) error {
 	prtty.Info.Println("--> generating go code...")
 	if packageName == "" {
@@ -132,6 +156,9 @@ func generateFile(dirs sourceDirGroup, dest, packageName string) error {
 
 //go:generate go-bindata --pkg=temple templates/...
 
+// writeToFile writes the given templateData to the file located
+// at dest. It uses the template located at templates/generated.go.tmpl.
+// If there is already a file located at dest, it will be overwritten.
 func (data *templateData) writeToFile(dest string) error {
 	tmplAsset, err := Asset("templates/generated.go.tmpl")
 	if err != nil {
@@ -150,6 +177,8 @@ func (data *templateData) writeToFile(dest string) error {
 	return ioutil.WriteFile(dest, formatted, os.ModePerm)
 }
 
+// collectSourceFiles recursively walks through dir and its subdirectories
+// and returns an array of all the source files (files which end in .tmpl).
 func collectSourceFiles(dir string) ([]sourceFile, error) {
 	sourceFiles := []sourceFile{}
 	if err := collectTemplateFiles(dir, func(name, filename string) error {

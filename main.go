@@ -3,6 +3,10 @@
 // governed by the MIT license, which can be found
 // in the LICENSE file.
 
+// Temple is a command-line tool for managing go templates which
+// supports sharing templates between a client and server. It generates
+// code which is compatible with gopherjs and can be compiled to
+// javascript to run in the browser.
 package main
 
 import (
@@ -22,11 +26,17 @@ var (
 	verbose = false
 )
 
+// setQuiet effectively causes all loggers to print
+// to /dev/null. However, error will still be printed
+// out to stderr.
 func setQuiet() {
 	prtty.AllLoggers.SetOutput(ioutil.Discard)
 	prtty.Error.Output = os.Stderr
 }
 
+// setVerbose sets all loggers to print to stdout,
+// except for the Error logger, which will print to
+// stderr.
 func setVerbose() {
 	prtty.AllLoggers.SetOutput(os.Stdout)
 	prtty.Error.Output = os.Stderr
