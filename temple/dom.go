@@ -48,15 +48,15 @@ func (l *Layout) ExecuteEl(el dom.Element, data interface{}) error {
 	return ExecuteEl(l, el, data)
 }
 
-// ParseInlineTemplates scans the DOM for inline templates which
+// AddAllInline scans the DOM for inline templates which
 // must be script tags with the type "text/template". The id property
 // will be used for the name of each template, and the special
 // property "data-kind" can be used to distinguish between regular
 // templates, partials, and layouts. So, to declare an inline partial
-// for use with the ParseInlineTemplates method, use an opening script
+// for use with the AddAllInline method, use an opening script
 // tag that looks like:
 //   <script type="text/template" id="todo" data-kind="partial">
-func (g *Group) ParseInlineTemplates() error {
+func (g *Group) AddAllInline() error {
 	document := dom.GetWindow().Document()
 	elements := document.QuerySelectorAll(`script[type="text/template"]`)
 	for _, el := range elements {

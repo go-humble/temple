@@ -131,11 +131,11 @@ The `AddInlineTemplate` method will use the id property of the element as the te
 and the innerHTML of the given element as the template source.
 
 You can also load multiple inline templates (as well as partials and layouts) at once with
-the [`AddInlineTemplates`](http://godoc.org/github.com/go-humble/temple/temple/#Group.AddInlineTemplates)
+the [`AddAllInline`](http://godoc.org/github.com/go-humble/temple/temple/#Group.AddAllInline)
 method, which scans the DOM for script tags with a `type` attribute of "text/template".
 
 ```go
-if err := g.AddInlineTemplates(); err != nil {
+if err := g.AddAllInline(); err != nil {
 	// Handle err
 }
 ```
