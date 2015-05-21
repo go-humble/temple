@@ -8,7 +8,7 @@
 // code which is compatible with gopherjs and can be compiled to
 // javascript to run in the browser.
 //
-// Version X.X.X (develop)
+// Version 0.0.1
 package main
 
 import (
