@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/albrow/prtty"
+	"github.com/go-humble/temple/temple/assets"
 	"go/format"
 	"io/ioutil"
 	"os"
@@ -154,13 +155,13 @@ func generateFile(dirs sourceDirGroup, dest, packageName string) error {
 	return nil
 }
 
-//go:generate go-bindata --pkg=temple templates/...
+//go:generate go-bindata --pkg=assets -o=assets/bindata.go templates/...
 
 // writeToFile writes the given templateData to the file located
 // at dest. It uses the template located at templates/generated.go.tmpl.
 // If there is already a file located at dest, it will be overwritten.
 func (data *templateData) writeToFile(dest string) error {
-	tmplAsset, err := Asset("templates/generated.go.tmpl")
+	tmplAsset, err := assets.Asset("templates/generated.go.tmpl")
 	if err != nil {
 		return err
 	}

@@ -19,5 +19,5 @@ func TestCustomFunc(t *testing.T) {
 	if err := g.AddTemplate("test", `{{ greet "world"}}`); err != nil {
 		t.Fatalf("Unexpected error in AddTemplate: %s", err.Error())
 	}
-	ExpectExecutorOutputs(t, g.Templates["test"], nil, "Hello, world!")
+	expectExecutorOutputs(t, g.Templates["test"], nil, "Hello, world!")
 }

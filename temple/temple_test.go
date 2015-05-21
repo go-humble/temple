@@ -19,7 +19,7 @@ func TestAddTemplate(t *testing.T) {
 	if !found {
 		t.Fatal(`Template named "test" was not added to map of Templates`)
 	}
-	ExpectExecutorOutputs(t, testTmpl, "world", "Hello, world!")
+	expectExecutorOutputs(t, testTmpl, "world", "Hello, world!")
 }
 
 func TestAddPartial(t *testing.T) {
@@ -50,7 +50,7 @@ func TestAddPartial(t *testing.T) {
 	if !found {
 		t.Fatal(`Template named "test" was not added to map of Templates`)
 	}
-	ExpectExecutorOutputs(t, testTmpl, nil, "foo bar baz foobarbaz")
+	expectExecutorOutputs(t, testTmpl, nil, "foo bar baz foobarbaz")
 }
 
 func TestAddLayout(t *testing.T) {
@@ -80,7 +80,7 @@ func TestAddLayout(t *testing.T) {
 	if !found {
 		t.Fatal(`Template named "test" was not added to map of Templates`)
 	}
-	ExpectExecutorOutputs(t, testTmpl, nil, "<h2>test foo</h2>")
+	expectExecutorOutputs(t, testTmpl, nil, "<h2>test foo</h2>")
 }
 
 func TestAddAllFiles(t *testing.T) {
@@ -102,5 +102,5 @@ func TestAddAllFiles(t *testing.T) {
 	if !found {
 		t.Fatal(`Template named "todos/index" was not added to map of Templates`)
 	}
-	ExpectExecutorOutputs(t, todosTmpl, todos, "<html><head><title>Todos</title></head><body><ul><li>One</li><li>Two</li><li>Three</li></ul></body></html>")
+	expectExecutorOutputs(t, todosTmpl, todos, "<html><head><title>Todos</title></head><body><ul><li>One</li><li>Two</li><li>Three</li></ul></body></html>")
 }

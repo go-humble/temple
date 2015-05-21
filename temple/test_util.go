@@ -10,9 +10,9 @@ import (
 	"testing"
 )
 
-// ExpectExecutorOutputs executes e and then adds an error to t if the output
+// expectExecutorOutputs executes e and then adds an error to t if the output
 // does not match expected.
-func ExpectExecutorOutputs(t *testing.T, e Executor, data interface{}, expected string) {
+func expectExecutorOutputs(t *testing.T, e Executor, data interface{}, expected string) {
 	buf := bytes.NewBuffer([]byte{})
 	if err := e.Execute(buf, data); err != nil {
 		t.Errorf("Unexpected error executing template: %s", err.Error())
