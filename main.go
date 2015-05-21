@@ -7,6 +7,8 @@
 // supports sharing templates between a client and server. It generates
 // code which is compatible with gopherjs and can be compiled to
 // javascript to run in the browser.
+//
+// Version X.X.X (develop)
 package main
 
 import (

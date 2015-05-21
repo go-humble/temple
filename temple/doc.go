@@ -7,4 +7,6 @@
 // each template with other templates depending on which category
 // it belongs to. Temple is compatible with gopherjs and can be
 // compiled to javascript and run in a browser.
+//
+// Version X.X.X (develop)
 package temple
