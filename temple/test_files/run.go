@@ -24,9 +24,9 @@ var todos = []Todo{
 }
 
 func main() {
-	todosTmpl, found := Templates["todos/index"]
-	if !found {
-		log.Fatal(`Template named "todos/index" was not added to map of Templates`)
+	todosTmpl, err := GetTemplate("todos/index")
+	if err != nil {
+		log.Fatal(err)
 	}
 	if err := todosTmpl.Execute(os.Stdout, todos); err != nil {
 		log.Fatal(err)
