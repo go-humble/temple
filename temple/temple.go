@@ -6,6 +6,7 @@
 package temple
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -62,13 +63,86 @@ type Layout struct {
 // A Group represents a set of associated templates, partials, and layouts.
 // Each Group also gets its own template.FuncMap called Funcs.
 type Group struct {
-	Templates map[string]Template
-	Partials  map[string]Partial
-	Layouts   map[string]Layout
+	templates map[string]*Template
+	partials  map[string]*Partial
+	layouts   map[string]*Layout
 	// Funcs is a map of function names to functions. All functions in the
-	// FuncMap are accessible by all Templates, Partials, and Layouts for
+	// FuncMap are accessible by all templates, partials, and layouts for
 	// this Group.
 	Funcs template.FuncMap
+}
+
+// GetTemplate returns the template identified by name, or an error if
+// the template could not be found.
+func (g Group) GetTemplate(name string) (*Template, error) {
+	template, found := g.templates[name]
+	if !found {
+		return nil, fmt.Errorf("Could not find template named %s", name)
+	}
+	return template, nil
+}
+
+// GetPartial returns the partial identified by name, or an error if
+// the partial could not be found.
+func (g Group) GetPartial(name string) (*Partial, error) {
+	partial, found := g.partials[name]
+	if !found {
+		return nil, fmt.Errorf("Could not find partial named %s", name)
+	}
+	return partial, nil
+}
+
+// GetLayout returns the layout identified by name, or an error if
+// the layout could not be found.
+func (g Group) GetLayout(name string) (*Layout, error) {
+	layout, found := g.layouts[name]
+	if !found {
+		return nil, fmt.Errorf("Could not find layout named %s", name)
+	}
+	return layout, nil
+}
+
+// MustGetTemplate works like GetTemplate, except that it panics
+// instead of returning an error if the template could not be
+// found.
+func (g Group) MustGetTemplate(name string) *Template {
+	template, found := g.templates[name]
+	if !found {
+		panic("Could not find template named " + name)
+	}
+	return template
+}
+
+// MustGetPartial works like GetPartial, except that it panics
+// instead of returning an error if the partial could not be
+// found.
+func (g Group) MustGetPartial(name string) *Partial {
+	partial, found := g.partials[name]
+	if !found {
+		panic("Could not find partial named " + name)
+	}
+	return partial
+}
+
+// MustGetLayout works like GetLayout, except that it panics
+// instead of returning an error if the layout could not be
+// found.
+func (g Group) MustGetLayout(name string) *Layout {
+	layout, found := g.layouts[name]
+	if !found {
+		panic("Could not find layout named " + name)
+	}
+	return layout
+}
+
+// NewGroup creates, initializes, and returns a new Group
+func NewGroup() *Group {
+	return &Group{
+		templates: map[string]*Template{},
+		partials:  map[string]*Partial{},
+		layouts:   map[string]*Layout{},
+		Funcs:     template.FuncMap{},
+	}
 }
 
 // Executor represents some type of template that is capable of executing (i.e. rendering)
@@ -76,16 +150,6 @@ type Group struct {
 // as the builtin template.Template.
 type Executor interface {
 	Execute(wr io.Writer, data interface{}) error
-}
-
-// NewGroup creates, initializes, and returns a new Group
-func NewGroup() *Group {
-	return &Group{
-		Templates: map[string]Template{},
-		Partials:  map[string]Partial{},
-		Layouts:   map[string]Layout{},
-		Funcs:     template.FuncMap{},
-	}
 }
 
 // AddFunc adds f to the FuncMap for the group under the given
@@ -132,7 +196,7 @@ func (g *Group) AddTemplate(name, src string) error {
 	template := Template{
 		Template: tmpl,
 	}
-	g.Templates[tmpl.Name()] = template
+	g.templates[tmpl.Name()] = &template
 	return g.associateTemplate(template)
 }
 
@@ -160,7 +224,7 @@ func (g *Group) AddTemplateFiles(dir string) error {
 // Namely, it associates all partials and layouts with the template.
 func (g *Group) associateTemplate(template Template) error {
 	// Associate each partial with this template
-	for _, partial := range g.Partials {
+	for _, partial := range g.partials {
 		if template.Lookup(partial.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -168,7 +232,7 @@ func (g *Group) associateTemplate(template Template) error {
 		}
 	}
 	// Associate each layout with this template
-	for _, layout := range g.Layouts {
+	for _, layout := range g.layouts {
 		if template.Lookup(layout.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(layout.PrefixedName(), layout.Tree); err != nil {
 				return err
@@ -188,7 +252,7 @@ func (g *Group) AddPartial(name, src string) error {
 	partial := Partial{
 		Template: tmpl,
 	}
-	g.Partials[tmpl.Name()] = partial
+	g.partials[tmpl.Name()] = &partial
 	return g.associatePartial(partial)
 }
 
@@ -218,7 +282,7 @@ func (g *Group) AddPartialFiles(dir string) error {
 // partials.
 func (g *Group) associatePartial(partial Partial) error {
 	// Associate this partial with every template
-	for _, template := range g.Templates {
+	for _, template := range g.templates {
 		if template.Lookup(partial.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -226,7 +290,7 @@ func (g *Group) associatePartial(partial Partial) error {
 		}
 	}
 	// Associate this partial with every other partial
-	for _, other := range g.Partials {
+	for _, other := range g.partials {
 		if other.Lookup(partial.PrefixedName()) == nil {
 			if _, err := other.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -234,7 +298,7 @@ func (g *Group) associatePartial(partial Partial) error {
 		}
 	}
 	// Associate every other partial with this partial
-	for _, other := range g.Partials {
+	for _, other := range g.partials {
 		if partial.Lookup(partial.PrefixedName()) == nil {
 			if _, err := partial.AddParseTree(partial.PrefixedName(), other.Tree); err != nil {
 				return err
@@ -242,7 +306,7 @@ func (g *Group) associatePartial(partial Partial) error {
 		}
 	}
 	// Associate this partial with every layout
-	for _, layout := range g.Layouts {
+	for _, layout := range g.layouts {
 		if layout.Lookup(partial.PrefixedName()) == nil {
 			if _, err := layout.AddParseTree(partial.PrefixedName(), partial.Tree); err != nil {
 				return err
@@ -262,7 +326,7 @@ func (g *Group) AddLayout(name, src string) error {
 	layout := Layout{
 		Template: tmpl,
 	}
-	g.Layouts[tmpl.Name()] = layout
+	g.layouts[tmpl.Name()] = &layout
 	return g.associateLayout(layout)
 }
 
@@ -292,7 +356,7 @@ func (g *Group) AddLayoutFiles(dir string) error {
 // all partials with the layout.
 func (g *Group) associateLayout(layout Layout) error {
 	// Associate this layout with every template
-	for _, template := range g.Templates {
+	for _, template := range g.templates {
 		if template.Lookup(layout.PrefixedName()) == nil {
 			if _, err := template.AddParseTree(layout.PrefixedName(), layout.Tree); err != nil {
 				return err
@@ -300,7 +364,7 @@ func (g *Group) associateLayout(layout Layout) error {
 		}
 	}
 	// Associate each partial with this layout
-	for _, partial := range g.Partials {
+	for _, partial := range g.partials {
 		if layout.Lookup(layout.PrefixedName()) == nil {
 			if _, err := layout.AddParseTree(layout.PrefixedName(), partial.Tree); err != nil {
 				return err

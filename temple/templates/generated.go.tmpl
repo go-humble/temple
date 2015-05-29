@@ -18,9 +18,12 @@ import (
 )
 
 var (
-	Templates map[string]temple.Template
-	Partials  map[string]temple.Partial
-	Layouts   map[string]temple.Layout
+	GetTemplate func(name string) (*temple.Template, error)
+	GetPartial func(name string) (*temple.Partial, error)
+	GetLayout func(name string) (*temple.Layout, error)
+	MustGetTemplate func(name string) *temple.Template
+	MustGetPartial func(name string) *temple.Partial
+	MustGetLayout func(name string) *temple.Layout
 )
 
 func init() {
@@ -43,7 +46,10 @@ func init() {
 		panic(err)
 	}
 	{{ end }}
-	Templates = g.Templates
-	Partials = g.Partials
-	Layouts = g.Layouts
+	GetTemplate = g.GetTemplate
+	GetPartial = g.GetPartial
+	GetLayout = g.GetLayout
+	MustGetTemplate = g.MustGetTemplate
+	MustGetPartial = g.MustGetPartial
+	MustGetLayout = g.MustGetLayout
 }

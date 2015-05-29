@@ -15,7 +15,7 @@ func TestAddTemplate(t *testing.T) {
 		t.Fatalf("Unexpected error in AddTemplate: %s", err.Error())
 	}
 	// Get the template from the map
-	testTmpl, found := g.Templates["test"]
+	testTmpl, found := g.templates["test"]
 	if !found {
 		t.Fatal(`Template named "test" was not added to map of Templates`)
 	}
@@ -37,7 +37,7 @@ func TestAddPartial(t *testing.T) {
 		if err := g.AddPartial(name, src); err != nil {
 			t.Fatalf("Unexpected error in AddPartial: %s", err.Error())
 		}
-		if _, found := g.Partials[name]; !found {
+		if _, found := g.partials[name]; !found {
 			t.Errorf(`Partial named "%s" was not added to the map of Partials`, name)
 		}
 	}
@@ -46,7 +46,7 @@ func TestAddPartial(t *testing.T) {
 	if err := g.AddTemplate("test", `{{ template "partials/foo" }} {{ template "partials/bar" }} {{ template "partials/baz" }} {{ template "partials/foobarbaz" }}`); err != nil {
 		t.Fatalf("Unexpected error in AddTemplate: %s", err.Error())
 	}
-	testTmpl, found := g.Templates["test"]
+	testTmpl, found := g.templates["test"]
 	if !found {
 		t.Fatal(`Template named "test" was not added to map of Templates`)
 	}
@@ -60,7 +60,7 @@ func TestAddLayout(t *testing.T) {
 	if err := g.AddPartial("foo", "foo"); err != nil {
 		t.Fatalf("Unexpected error in AddPartial: %s", err.Error())
 	}
-	if _, found := g.Partials["foo"]; !found {
+	if _, found := g.partials["foo"]; !found {
 		t.Errorf(`Partial named "%s" was not added to the map of Partials`, "foo")
 	}
 	// The header layout renders a content template (which must be defined by a template using
@@ -68,7 +68,7 @@ func TestAddLayout(t *testing.T) {
 	if err := g.AddLayout("header", `<h2>{{ template "content" }} {{ template "partials/foo" }}</h2>`); err != nil {
 		t.Fatalf("Unexpected error in AddLayout: %s", err.Error())
 	}
-	if _, found := g.Layouts["header"]; !found {
+	if _, found := g.layouts["header"]; !found {
 		t.Errorf(`Layout named "%s" was not added to the map of Layouts`, "header")
 	}
 	// The test template defines a content template and attempts to render itself inside the
@@ -76,7 +76,7 @@ func TestAddLayout(t *testing.T) {
 	if err := g.AddTemplate("test", `{{ define "content"}}test{{end}}{{ template "layouts/header" }}`); err != nil {
 		t.Fatalf("Unexpected error in AddTemplate: %s", err.Error())
 	}
-	testTmpl, found := g.Templates["test"]
+	testTmpl, found := g.templates["test"]
 	if !found {
 		t.Fatal(`Template named "test" was not added to map of Templates`)
 	}
@@ -98,7 +98,7 @@ func TestAddAllFiles(t *testing.T) {
 		{Title: "Two"},
 		{Title: "Three"},
 	}
-	todosTmpl, found := g.Templates["todos/index"]
+	todosTmpl, found := g.templates["todos/index"]
 	if !found {
 		t.Fatal(`Template named "todos/index" was not added to map of Templates`)
 	}
