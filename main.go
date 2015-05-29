@@ -8,7 +8,7 @@
 // code which is compatible with gopherjs and can be compiled to
 // javascript to run in the browser.
 //
-// Version X.X.X (develop)
+// Version 0.1.0
 package main
 
 import (
@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	version = "temple version X.X.X (develop)"
+	version = "temple version 0.1.0"
 )
 
 var (
