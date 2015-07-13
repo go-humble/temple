@@ -299,8 +299,8 @@ func (g *Group) associatePartial(partial Partial) error {
 	}
 	// Associate every other partial with this partial
 	for _, other := range g.partials {
-		if partial.Lookup(partial.PrefixedName()) == nil {
-			if _, err := partial.AddParseTree(partial.PrefixedName(), other.Tree); err != nil {
+		if partial.Lookup(other.PrefixedName()) == nil {
+			if _, err := partial.AddParseTree(other.PrefixedName(), other.Tree); err != nil {
 				return err
 			}
 		}

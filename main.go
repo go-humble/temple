@@ -8,20 +8,21 @@
 // code which is compatible with gopherjs and can be compiled to
 // javascript to run in the browser.
 //
-// Version 0.1.0
+// Version 0.1.1
 package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/albrow/prtty"
 	"github.com/go-humble/temple/temple"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"os"
 )
 
 const (
-	version = "temple version 0.1.0"
+	version = "temple version 0.1.1"
 )
 
 var (
