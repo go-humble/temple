@@ -50,13 +50,13 @@ Installation
 Install the temple command line tool with the following.
 
 ```bash
-go get github.com/go-humble/temple`
+go get -u github.com/go-humble/temple
 ```
 
 You may also need to install gopherjs. The latest version is recommended. Install
 gopherjs with:
 
-```
+```bash
 go get -u github.com/gopherjs/gopherjs
 ```
 
