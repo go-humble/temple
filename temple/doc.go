@@ -8,5 +8,5 @@
 // it belongs to. Temple is compatible with gopherjs and can be
 // compiled to javascript and run in a browser.
 //
-// Version 0.1.1
+// Version 0.1.2
 package temple
