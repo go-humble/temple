@@ -1,7 +1,7 @@
 Humble/Temple
 =============
 
-[![Version](https://img.shields.io/badge/version-0.1.2-5272B4.svg)](https://github.com/go-humble/temple/releases)
+[![Version](https://img.shields.io/badge/version-0.1.3-5272B4.svg)](https://github.com/go-humble/temple/releases)
 [![GoDoc](https://godoc.org/github.com/go-humble/temple?status.svg)](https://godoc.org/github.com/go-humble/temple)
 
 A library and a command line tool for sanely managing go templates, with the ability
